@@ -25,3 +25,5 @@ or
 5. part 1
 
 8 puzzles total
+
+![status](status.png) 
