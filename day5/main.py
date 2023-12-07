@@ -86,22 +86,36 @@ def main():
     sections = [[r for r in s.split("\n") if r] for s in sections]
 
     seeds = [int(x) for x in sections[0][0].split()[1:]]
-    seeds = [list(a,a+b) for a,b in zip(seeds[::2],seeds[1::2])]
-    seeds = sum(seeds,[])
+    seeds = [(a,b) for a,b in zip(seeds[::2],seeds[1::2])]
 
     for sec in tqdm(sections[1:], desc="building keymaps...", leave=False):
         KEYMAP(*sec)
 
     print(KEYMAP.maps)
 
-    out = []
-    for (a,b) in tqdm(seeds, leave=False):
+    def mygenerator(a, b):
+        for num in range(a, a + b):
+            yield num
 
-    for m in tqdm(KEYMAP.maps, leave=False):
-        seeds = [m.get(s) for s in tqdm(seeds, leave=False)]
-        # m.clear()
+    total = sum([s[1] for s in seeds])
 
-    print(min(seeds))
+    lowest = None
+    prog = tqdm(total=total)
+    for (a,b) in seeds:
+
+        def job(seed):
+            for m in KEYMAP.maps:
+                seed = m.get(seed) 
+            prog.update()
+            return seed
+
+        with ThreadPoolExecutor() as ex:
+            seeds = ex.map(job, mygenerator(a,b))
+
+        candidate = min(seeds)
+        lowest = min(candidate, lowest) if type(lowest) is int else candidate
+
+    print(lowest)
 
 
 if __name__ == "__main__":
