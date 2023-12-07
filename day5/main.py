@@ -35,6 +35,7 @@ humidity-to-location map:
 """
 
 from tqdm import tqdm
+from concurrent.futures import ProcessPoolExecutor
 
 class KEYMAP:
 
@@ -79,8 +80,9 @@ def main():
 
     print(KEYMAP.maps)
 
-    for m in KEYMAP.maps:
-        seeds = [m.get(s) for s in tqdm(seeds)]
+    for m in tqdm(KEYMAP.maps):
+        with ProcessPoolExecutor() as ex:
+            seeds = ex.map(m.get, seeds)
 
     print(min(seeds))
 
