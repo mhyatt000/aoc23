@@ -34,30 +34,42 @@ humidity-to-location map:
 56 93 4
 """
 
+from concurrent.futures import ThreadPoolExecutor
+
 from tqdm import tqdm
-from concurrent.futures import ProcessPoolExecutor
+
 
 class KEYMAP:
-
     maps = []
 
     def __init__(self, *rows):
-        self.name = rows[0].strip(':')
-
-        self.spread = {}
-        for r in tqdm(rows[1:], desc=self.name, leave=False):
-            bstart, astart, length = [int(x) for x in r.split()]
-            d = {
-                a: b
-                for a, b in zip(
-                    range(astart, astart + length), range(bstart, bstart + length)
-                )
-            }
-            self.spread.update(d)
-
+        self.name = rows[0].strip(":")
+        extract = lambda r: [int(x) for x in r.split()]
+        self.rows = [extract(r) for r in rows[1:]]
         KEYMAP.maps.append(self)
+        self.f = lambda b, a, l, x: b + (x - a) if a <= x < a + l else None
+
+    def process(self, x):
+        result = [self.f(*r, x) for r in self.rows]
+        result = [r for r in result if r != None]
+        return result[0] if len(result) else x
+
+
+    # def _make(self):
+        # F = []
+        # for r in tqdm(self.rows[1:], desc=self.name, leave=False):
+            # b, a, l = [int(x) for x in r.split()]
+            # f = lambda a, b, l, x: b + (x - a) if a <= x < a + l else x
+            # f = lambda x: x + r[0] - r[1] if (x >= r[1] and x < (r[1] + r[2])) else x
+            # F.append(f)
+        # self.g = lambda x: [f(x) for f in F if f(x) != x]
+
+    def clear(self):
+        """for space purposes"""
+        del self.spread
 
     def get(self, key):
+        return self.process(key)
         return self.spread.get(key, key)
 
     def __repr__(self):
@@ -65,24 +77,29 @@ class KEYMAP:
 
 
 def main():
-
     """So, the lowest location number in this example is 35."""
 
     with open("puzzle.txt", "r") as file:
         sections = [r for r in file.read().split("\n\n") if r]
-    # sections = [r for r in SAMPLE.split('\n\n') if r]
+    # sections = [r for r in SAMPLE.split("\n\n") if r]
 
-    sections = [[r for r in s.split('\n') if r] for s in sections]
+    sections = [[r for r in s.split("\n") if r] for s in sections]
 
     seeds = [int(x) for x in sections[0][0].split()[1:]]
-    for sec in tqdm(sections[1:], desc='building keymaps...', leave=False):
+    seeds = [list(a,a+b) for a,b in zip(seeds[::2],seeds[1::2])]
+    seeds = sum(seeds,[])
+
+    for sec in tqdm(sections[1:], desc="building keymaps...", leave=False):
         KEYMAP(*sec)
 
     print(KEYMAP.maps)
 
-    for m in tqdm(KEYMAP.maps):
-        with ProcessPoolExecutor() as ex:
-            seeds = ex.map(m.get, seeds)
+    out = []
+    for (a,b) in tqdm(seeds, leave=False):
+
+    for m in tqdm(KEYMAP.maps, leave=False):
+        seeds = [m.get(s) for s in tqdm(seeds, leave=False)]
+        # m.clear()
 
     print(min(seeds))
 
