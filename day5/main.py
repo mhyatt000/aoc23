@@ -75,7 +75,6 @@ class KEYMAP:
     def __repr__(self):
         return f"<KEYMAP {self.name}>"
 
-
 def main():
     """So, the lowest location number in this example is 35."""
 
@@ -100,7 +99,12 @@ def main():
     total = sum([s[1] for s in seeds])
 
     lowest = None
+
+    dsets = [SeedDataset(a,b) for s in seeds]
+
+    quit()
     prog = tqdm(total=total)
+
     for (a,b) in seeds:
 
         def job(seed):
